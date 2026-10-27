@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPS Smart Home 3D Simulator</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <!--бібліотеки 3D рендерингу та GUI -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.18"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
+</head>
+<body>
+    <div id="instructions">
+        <h1>Система "Розумний будинок"</h1>
+        <p><strong>Клацніть по екрану, щоб розпочати навігацію</strong></p>
+        <p>Керування: <b>WASD / Стрілки</b> — переміщення | <b>Миша</b> — огляд</p>
+        <p id="backend-status" class="status-disconnected">Сервер: Перевірка підключення...</p>
+    </div>
+    <div id="crosshair"></div>
+
+    <!--завантаження головного модульного ES6 скрипту -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
