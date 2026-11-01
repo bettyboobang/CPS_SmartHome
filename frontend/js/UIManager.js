@@ -1,22 +1,27 @@
-export class UIManager {//керує інтерфейсом користувача, включаючи панель статистики та графічний інтерфейс для керування розумним світлом
-    constructor(simulationEngine, deviceManager) {//ініціалізує менеджер інтерфейсу користувача з посиланням на движок симуляції та менеджер пристроїв
+export class UIManager {
+    constructor(simulationEngine, deviceManager) {
         this.simEngine = simulationEngine;
         this.deviceManager = deviceManager;
+
         this.initStats();
         this.initGUI();
     }
 
-    initStats() {//ініціалізує панель статистики для відображення інформації про продуктивність
-        this.stats = new Stats();
-        this.stats.showPanel(0);
-        document.body.appendChild(this.stats.dom);//додає панель статистики до документа
+    initStats() {
+        if (typeof Stats !== 'undefined') {
+            this.stats = new Stats();
+            this.stats.showPanel(0);
+            const statsEl = this.stats.dom || this.stats.domElement;//у Stats.js r16 елемент називається domElement, у новіших версіях — dom
+            if (statsEl) document.body.appendChild(statsEl);
+        }
     }
+    initGUI() {
+        if (typeof lil === 'undefined' || !lil.GUI) return;
 
-    initGUI() {//ініціалізує графічний інтерфейс для керування розумним світлом та відображення стану датчика
-        this.gui = new lil.GUI({ title: 'Панель керування' });
-        const light = this.deviceManager.getDeviceById('smart_light_1');//отримує посилання на розумне світло з менеджера пристроїв
+        this.gui = new lil.GUI({ title: 'Панель керування CPS' });
+        const light = this.deviceManager.getDeviceById('smart_light_1');
 
-        this.params = {//зберігає параметри для графічного інтерфейсу, включаючи режим роботи, стан світла, інтенсивність та стан датчика
+        this.params = {
             autoMode: true,
             lightOn: false,
             intensity: 1.5,
@@ -24,23 +29,26 @@ export class UIManager {//керує інтерфейсом користувач
             sensorTriggered: false
         };
 
+        let manualToggle = null;
+        let intensitySlider = null;
+
         const modeFolder = this.gui.addFolder('Режим роботи');
-        modeFolder.add(this.params, 'autoMode').name('Автоматичний режим').onChange((val) => {//додає обробник зміни стану автоматичного режиму, щоб оновити стан світла та доступність елементів керування
+        modeFolder.add(this.params, 'autoMode').name('Автоматичний режим').onChange((val) => {
             this.simEngine.autoMode = val;
-            manualToggle.disable(val);
-            intensitySlider.disable(val);
+            if (manualToggle) manualToggle.disable(val);
+            if (intensitySlider) intensitySlider.disable(val);
         });
 
-        const lightFolder = this.gui.addFolder('Ручне керування');//додає елементи керування для ручного керування розумним світлом, включаючи перемикач увімкнення та вимкнення та повзунок інтенсивності
-        const manualToggle = lightFolder.add(this.params, 'lightOn').name('Увімкнути світло').onChange((val) => {
-            if (!this.simEngine.autoMode) {
+        const lightFolder = this.gui.addFolder('Ручне керування');
+        manualToggle = lightFolder.add(this.params, 'lightOn').name('Увімкнути світло').listen().onChange((val) => {
+            if (!this.simEngine.autoMode && light) {
                 val ? light.turnOn() : light.turnOff();
             }
         });
-        manualToggle.disable(true);//вимикає перемикач увімкнення та вимкнення, якщо автоматичний режим активний
+        manualToggle.disable(true);
 
-        const intensitySlider = lightFolder.add(this.params, 'intensity', 0, 3, 0.1).name('Інтенсивність').onChange((val) => {//додає обробник зміни значення повзунка інтенсивності, щоб оновити інтенсивність світла
-            light.setIntensity(val);
+        intensitySlider = lightFolder.add(this.params, 'intensity', 0, 3, 0.1).name('Інтенсивність').onChange((val) => {
+            if (light) light.setIntensity(val);
         });
         intensitySlider.disable(true);
 
@@ -49,11 +57,15 @@ export class UIManager {//керує інтерфейсом користувач
         statusFolder.add(this.params, 'sensorTriggered').name('Датчик активовано').listen();
     }
 
-    update(distance, triggered) {//оновлює параметри графічного інтерфейсу на основі поточного стану датчика та світла
+    update(distance, triggered) {
         const light = this.deviceManager.getDeviceById('smart_light_1');
-        this.params.distanceToSensor = distance.toFixed(2) + ' м';
-        this.params.sensorTriggered = triggered;
-        this.params.lightOn = light ? light.getStatus() : false;
-        this.stats.update();
+        if (this.params) {
+            this.params.distanceToSensor = distance.toFixed(2) + ' м';
+            this.params.sensorTriggered = triggered;
+            this.params.lightOn = light ? light.getStatus() : false;
+        }
+        if (this.stats) {
+            this.stats.update();
+        }
     }
 }

@@ -49,9 +49,16 @@ class App {//ініціалізує основний додаток, створ�
         this.deviceManager.addDevice(motionSensor);
     }
 
-    animate() {//основний цикл анімації, який оновлює стан контролера від першої особи, движка симуляції та менеджера інтерфейсу користувача, а також рендерить сцену
+    animate() {//основний цикл анімації
         requestAnimationFrame(this.animate);
+        try {
+            this.tick();
+        } catch (err) {
+            showFatal('Помилка в циклі анімації', err);
+        }
+    }
 
+    tick() {//один кадр: оновлює контролер, симуляцію, інтерфейс і рендерить сцену
         const time = performance.now();
         const deltaTime = (time - this.prevTime) / 1000;
 
@@ -69,5 +76,22 @@ class App {//ініціалізує основний додаток, створ�
     }
 }
 
-const app = new App();
-app.start();
+function showFatal(title, err) {//показує помилку прямо на сторінці, щоб не доводилось відкривати консоль
+    console.error(title, err);
+    let box = document.getElementById('fatal-error');
+    if (!box) {
+        box = document.createElement('pre');
+        box.id = 'fatal-error';
+        box.style.cssText = 'position:fixed;left:10px;bottom:10px;right:10px;max-height:40vh;overflow:auto;z-index:1000;background:#300;color:#fcc;padding:12px;border-radius:8px;font-size:13px;user-select:text;';
+        document.body.appendChild(box);
+    }
+    box.textContent = title + ':\n' + (err && err.stack ? err.stack : err);
+}
+
+window.addEventListener('error', (e) => showFatal('Помилка', e.error || e.message));
+
+if (typeof THREE === 'undefined' || !THREE.PointerLockControls) {
+    showFatal('Не завантажилась бібліотека three.js (або PointerLockControls)', 'Перевірте інтернет/VPN/блокувальник реклами: скрипти беруться з cdnjs.cloudflare.com та cdn.jsdelivr.net');
+} else {
+    new App().start();
+}

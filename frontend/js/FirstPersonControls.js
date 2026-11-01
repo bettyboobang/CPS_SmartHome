@@ -28,7 +28,7 @@ export class FirstPersonController {//керує рухом камери від 
         switch (event.code) {//перевіряє код натиснутої клавіші та встановлює відповідний стан руху камери
             case 'KeyW' : case 'ArrowUp':
                 this.moveForward = isDown;
-                break;  
+                break;
             case 'KeyA' : case 'ArrowLeft':
                 this.moveLeft = isDown;
                 break;
@@ -42,7 +42,8 @@ export class FirstPersonController {//керує рухом камери від 
     }
 
     update(deltaTime) {//оновлює позицію камери на основі поточного стану руху та швидкості, обмежуючи рух камери в межах кімнати
-        if(!this.controls.isLocked) return;//перевіряє, чи заблокований вказівник, щоб визначити, чи слід оновлювати позицію камери
+        if (!this.controls.isLocked) return;//якщо вказівник не заблокований, камеру не оновлюємо
+        deltaTime = Math.min(deltaTime, 0.1);//обмежує крок часу, щоб після паузи камера не «стрибала»
         this.velocity.x -= this.velocity.x * 10.0 * deltaTime;//зменшує швидкість руху камери по осі X на основі часу, що пройшов, щоб створити ефект інерції
         this.velocity.z -= this.velocity.z * 10.0 * deltaTime;
         this.direction.z = Number(this.moveForward) - Number(this.moveBackward);//визначає напрямок руху камери по осі Z на основі поточного стану руху

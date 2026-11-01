@@ -14,26 +14,26 @@ export class SmartDevice {
 }
 
 export class SmartLight extends SmartDevice {//розширює SmartDevice, додаючи властивості для керування світлом
-    constructor(id, name, lightObdject, meshObject) {//створює екземпляр розумного світла з заданими параметрами
+    constructor(id, name, lightObject, meshObject) {//створює екземпляр розумного світла з заданими параметрами
         super(id, name);
-        this.lightObdject = lightObdject;//зберігає посилання на об'єкт світла
+        this.lightObject = lightObject;//зберігає посилання на об'єкт світла
         this.meshObject = meshObject;//зберігає посилання на об'єкт сітки, що представляє світло в сцені
         this.intensity = 1.5;
     }
     turnOn() {//вмикає світло, встановлюючи його інтенсивність та змінюючи колір сітки
         this.isEnabled = true;
-        this.lightObdject.intensity = this.intensity;
-        this.meshObject.material.color.set.Hex(0xffff00);//змінює колір сітки на жовтий, щоб візуально показати, що світло увімкнено
+        this.lightObject.intensity = this.intensity;
+        this.meshObject.material.color.setHex(0xffff00);//змінює колір сітки на жовтий, щоб візуально показати, що світло увімкнено
     }
     turnOff() {//вимикає світло, встановлюючи його інтенсивність та змінюючи колір сітки
         this.isEnabled = false;
-        this.lightObdject.intensity = 0.1;//зменшує інтенсивність світла до мінімального значення
-        this.meshObject.material.color.set.Hex(0x555555);
+        this.lightObject.intensity = 0.1;//зменшує інтенсивність світла до мінімального значення
+        this.meshObject.material.color.setHex(0x555555);
     }
     setIntensity(val) {//встановлює інтенсивність світла, якщо воно увімкнено
         this.intensity = val;
         if (this.isEnabled) {//перевіряє, чи світло увімкнено
-            this.lightObdject.intensity = val;
+            this.lightObject.intensity = val;
         }
     }
 }

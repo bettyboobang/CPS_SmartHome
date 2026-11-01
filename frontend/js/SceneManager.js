@@ -2,7 +2,7 @@ export class SceneManager {//керує сценою, камерою та рен
     constructor() {//ініціалізує сцену, камеру та рендерер, а також створює кімнату та обробляє зміну розміру вікна
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x121216);//встановлює колір фону сцени
-        this.scene.fog = new THREE.FogExp2(0x121216, 0.04);//встановлює туман для сцени, щоб створити ефект глибини
+        this.scene.fog = new THREE.FogExp2(0x121216, 0.02);//встановлює туман для сцени, щоб створити ефект глибини
 
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);//створює перспективну камеру з кутом огляду 75 градусів, співвідношенням сторін вікна та ближньою та дальньою площинами відсікання
         this.camera.position.set(0, 1.6, 3);//встановлює початкову позицію камери в сцені
@@ -18,7 +18,7 @@ export class SceneManager {//керує сценою, камерою та рен
 
     initRoom() {//створює базову кімнату з підлогою, стінами та стелею, а також додає амбієнтне освітлення
         const floorGeo = new THREE.PlaneGeometry(10, 10);//створює геометрію підлоги з розмірами
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.8 });//створює матеріал підлоги з темно-сірим кольором та високою шорсткістю
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x5a5a5a, roughness: 0.8 });//створює матеріал підлоги з сірим кольором та високою шорсткістю
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;//обертає підлогу, щоб вона лежала горизонтально
         floor.receiveShadow = true;
@@ -45,13 +45,16 @@ export class SceneManager {//керує сценою, камерою та рен
         rightWall.rotation.y = -Math.PI / 2;
         this.scene.add(rightWall);
 
-        const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x222222 });//створює матеріал стелі з темно-сірим кольором
+        const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x444444 });//створює матеріал стелі з темно-сірим кольором
         const ceiling = new THREE.Mesh(floorGeo, ceilingMat);
         ceiling.position.y = 3.5;//встановлює позицію стелі в сцені
         ceiling.rotation.x = Math.PI / 2;//обертає стелю, щоб вона лежала горизонтально
         this.scene.add(ceiling);
-        const ambient = new THREE.AmbientLight(0xffffff, 0.12);//створює амбієнтне освітлення з білим кольором та низькою інтенсивністю
+        const ambient = new THREE.AmbientLight(0xffffff, 0.8);//створює амбієнтне освітлення з білим кольором
         this.scene.add(ambient);
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x666666, 0.6);
+        hemiLight.position.set(0, 10, 0);
+        this.scene.add(hemiLight);
     }
 
     handleResize() {//додає обробник події зміни розміру вікна, щоб оновлювати камеру та рендерер відповідно до нового розміру вікна
