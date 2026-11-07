@@ -1,11 +1,14 @@
-* { box-sizing: border-box; }
+* { 
+    box-sizing: border-box; 
+}
 
 body {
     margin: 0;
     overflow: hidden;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
     user-select: none;
-    background-color: #121216;
+    background-color: #0b181c;
+    color: #e2f7f4;
 }
 
 #instructions {
@@ -14,37 +17,89 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     color: #ffffff;
-    background: rgba(18, 18, 24, 0.85);
-    backdrop-filter: blur(8px);
-    padding: 30px 40px;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(12, 32, 36, 0.9);
+    backdrop-filter: blur(12px);
+    padding: 30px 45px;
+    border-radius: 16px;
+    border: 1px solid rgba(77, 242, 194, 0.4);
     text-align: center;
     cursor: pointer;
     z-index: 100;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 0 35px rgba(77, 242, 194, 0.25), 0 15px 40px rgba(0,0,0,0.8);
+    transition: all 0.3s ease;
+}
+
+#instructions:hover {
+    border-color: rgba(77, 242, 194, 0.8);
+    box-shadow: 0 0 45px rgba(77, 242, 194, 0.4);
+}
+
+.tecna-badge {
+    display: inline-block;
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 4px 12px;
+    background: rgba(77, 242, 194, 0.15);
+    color: #4df2c2;
+    border: 1px solid #4df2c2;
+    border-radius: 20px;
+    margin-bottom: 12px;
 }
 
 #instructions h1 {
-    margin-top: 0;
-    font-size: 24px;
-    color: #4facfe;
+    margin: 0 0 12px 0;
+    font-size: 26px;
+    color: #4df2c2;
+    text-shadow: 0 0 10px rgba(77, 242, 194, 0.6);
 }
 
 #instructions p {
-    margin: 10px 0;
-    font-size: 15px;
-    color: #d1d5db;
+    margin: 8px 0;
+    font-size: 14px;
+    color: #c0ece5;
+}
+
+.hud-scenarios {
+    margin: 18px 0 10px 0;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+}
+
+.scenario-title {
+    font-size: 12px;
+    color: #79d6c7;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.btn-scen {
+    background: rgba(18, 56, 58, 0.8);
+    border: 1px solid #3be8b0;
+    color: #dcfbf2;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-scen:hover {
+    background: #3be8b0;
+    color: #0b181c;
+    box-shadow: 0 0 10px #3be8b0;
 }
 
 #backend-status {
-    font-size: 13px !important;
+    font-size: 12px !important;
     font-weight: bold;
-    margin-top: 15px !important;
+    margin-top: 14px !important;
+    letter-spacing: 0.5px;
 }
 
-.status-connected { color: #4caf50 !important; }
-.status-disconnected { color: #ff9800 !important; }
+.status-connected { color: #4df2c2 !important; }
+.status-disconnected { color: #ffaa00 !important; }
 
 #crosshair {
     position: absolute;
@@ -55,8 +110,85 @@ body {
     margin-top: -3px;
     margin-left: -3px;
     border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.7);
-    box-shadow: 0 0 4px rgba(255, 255, 255, 0.9);
+    background-color: #4df2c2;
+    box-shadow: 0 0 8px #4df2c2, 0 0 14px #4df2c2;
     pointer-events: none;
     z-index: 99;
+}
+
+#interactive-prompt {
+    position: absolute;
+    bottom: 22%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(11, 24, 28, 0.85);
+    border: 1px solid #4df2c2;
+    padding: 10px 22px;
+    border-radius: 8px;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 98;
+    box-shadow: 0 0 18px rgba(77, 242, 194, 0.3);
+}
+
+#prompt-device-name {
+    display: block;
+    font-size: 15px;
+    font-weight: bold;
+    color: #4df2c2;
+}
+
+#prompt-action-text {
+    display: block;
+    font-size: 12px;
+    color: #a4e9dc;
+    margin-top: 2px;
+}
+
+#tecna-hud {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 90;
+    pointer-events: none;
+}
+
+.hud-panel {
+    background: rgba(10, 28, 32, 0.75);
+    border: 1px solid rgba(77, 242, 194, 0.3);
+    border-left: 4px solid #4df2c2;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 13px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+.hud-item {
+    margin: 4px 0;
+}
+
+.hud-lbl {
+    color: #6edecb;
+}
+
+.hud-val {
+    color: #ffffff;
+    font-weight: bold;
+    margin-left: 6px;
+}
+.lil-gui {
+    --background-color: rgba(12, 30, 34, 0.92) !important;
+    --text-color: #d8fbf4 !important;
+    --title-background-color: #174246 !important;
+    --widget-color: #1a4d52 !important;
+    --hover-color: #276d74 !important;
+    --focus-color: #4df2c2 !important;
+    --number-color: #4df2c2 !important;
+    --string-color: #bc82f3 !important;
+    font-family: 'Segoe UI', monospace !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(77, 242, 194, 0.25) !important;
 }

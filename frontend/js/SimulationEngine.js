@@ -1,79 +1,103 @@
-export class SimulationEngine {//керує симуляцією розумного будинку, перевіряючи стан датчика руху та керуючи світлом на основі цього стану, а також відправляючи телеметрію на бекенд
-    constructor(deviceManager, backendUrl = 'http://localhost:3000') {
-        this.deviceManager = deviceManager;
-        this.backendUrl = backendUrl;
-        this.autoMode = true;
-        this.backendConnected = false;
-        this.checkBackendConnection();
-    }
+export class SimulationEngine {
+    constructor(sceneManager, controls, deviceManager, uiManager) {
+        this.sm = sceneManager;
+        this.controls = controls;
+        this.dm = deviceManager;
+        this.ui = uiManager;
 
-    async checkBackendConnection() {//перевіряє підключення до бекенду, надсилаючи запит на /api/status та оновлюючи стан підключення та елемент статусу на сторінці
-        try {//надсилає запит на бекенд для перевірки його доступності
-            const res = await fetch(`${this.backendUrl}/api/status`);
-            if (res.ok) {
-                this.backendConnected = true;
-                const statusElem = document.getElementById('backend-status');
-                if (statusElem) {
-                    statusElem.textContent = 'Сервер підключено';
-                    statusElem.className = 'status-connected';
+        // Безпечна ініціалізація Stats.js (підтримка будь-яких версій бібліотеки)
+        try {
+            if (typeof Stats === 'function') {
+                this.stats = new Stats();
+                const statsElement = this.stats.dom || this.stats.domElement;
+                if (statsElement) {
+                    statsElement.style.position = 'absolute';
+                    statsElement.style.left = 'auto';
+                    statsElement.style.right = '10px';
+                    statsElement.style.top = '10px';
+                    document.body.appendChild(statsElement);
                 }
             }
-        } catch (err) {//якщо запит не вдався, встановлює стан підключення як false та виводить попередження в консоль
-            console.warn('Сервер бекенду недоступний. Автономний режим.');
+        } catch (e) {
+            console.warn('[Stats.js] Лічильник кадрів пропущено:', e);
         }
+
+        this.raycaster = new THREE.Raycaster();
+        this.center = new THREE.Vector2(0, 0);
+        this.prevTime = performance.now();
+        this.currentTarget = null;
     }
 
-    update(cameraPosition) {//оновлює стан симуляції, перевіряючи стан датчика руху та керуючи світлом на основі цього стану, а також відправляючи телеметрію на бекенд
-        const sensor = this.deviceManager.getDeviceById('motion_sensor_1');//отримує екземпляр датчика руху з DeviceManager за його id
-        const light = this.deviceManager.getDeviceById('smart_light_1');//отримує екземпляр розумного світла з DeviceManager за його id
+    start() {
+        console.log("🚀 [SimulationEngine] 3D рендеринг кімнати Текни запущено!");
+        const loop = () => {
+            requestAnimationFrame(loop);
+            this.update();
+        };
+        loop();
+    }
 
-        if (!sensor || !light) return { distance: 0, triggered: false };//перевіряє, чи існують датчик руху та розумне світло, і якщо ні, повертає значення за замовчуванням
+    update() {
+        const time = performance.now();
+        const delta = Math.min((time - this.prevTime) / 1000, 0.1);
 
-        const { distance, triggered } = sensor.checkProximity(cameraPosition);//перевіряє, чи знаходиться камера в межах радіусу виявлення датчика руху та отримує відстань і стан тригера
+        // 1. Оновлення контролера гравця
+        if (this.controls && typeof this.controls.update === 'function') {
+            this.controls.update(delta);
+        }
 
-        if (this.autoMode) {//якщо увімкнено автоматичний режим, керує станом розумного світла на основі стану датчика руху та відправляє телеметрію на бекенд
-            if (triggered && !light.getStatus()) {
-                light.turnOn();
-                this.sendTelemetry('light_auto_on', { distance });
-            } else if (!triggered && light.getStatus()) {
-                light.turnOff();
-                this.sendTelemetry('light_auto_off', { distance });
+        // 2. Анімація пульсації плазмової лампи
+        if (this.sm.plasmaBulb && this.sm.plasmaBulb.visible) {
+            const scale = 1.0 + Math.sin(time * 0.005) * 0.05;
+            this.sm.plasmaBulb.scale.set(scale, scale, scale);
+        }
+
+        // 3. Анімація сканерів робочих рук
+        if (this.sm.servoArms && this.sm.servoArms.length > 0) {
+            this.sm.servoArms.forEach((arm, i) => {
+                arm.rotation.y = Math.sin(time * 0.002 + i * Math.PI) * 0.25;
+            });
+        }
+
+        // 4. Raycasting (прицілювання на пристрої)
+        if (this.sm.camera) {
+            this.raycaster.setFromCamera(this.center, this.sm.camera);
+            const meshes = this.dm.getAllInteractiveMeshes();
+            const intersects = this.raycaster.intersectObjects(meshes, true);
+
+            if (intersects.length > 0 && intersects[0].distance < 6.0) {
+                let hit = intersects[0].object;
+                while (hit && !hit.userData.smartDevice && hit.parent) {
+                    hit = hit.parent;
+                }
+                if (hit && hit.userData.smartDevice) {
+                    this.currentTarget = hit.userData.smartDevice;
+                    this.ui.showPrompt(this.currentTarget.name);
+                } else {
+                    this.currentTarget = null;
+                    this.ui.hidePrompt();
+                }
+            } else {
+                this.currentTarget = null;
+                this.ui.hidePrompt();
             }
         }
-        return { distance, triggered };
-    }
 
-    async sendTelemetry(event, data) {//відправляє телеметрію на бекенд, якщо підключення до нього встановлено, надсилаючи POST-запит на /api/telemetry з даними події та поточним часом
-        if (!this.backendConnected) return;//перевіряє, чи встановлено підключення до бекенду, і якщо ні, припиняє виконання функції
-        try {//надсилає POST-запит на бекенд з даними телеметрії
-            await fetch(`${this.backendUrl}/api/telemetry`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ event, data, timestamp: new Date().toISOString() })
-            });
-        } catch (e) {//якщо запит не вдався, виводить помилку в консоль
-            console.error('Помилка відправки телеметрії:', e);
+        this.prevTime = time;
+        if (this.stats && typeof this.stats.update === 'function') {
+            this.stats.update();
+        }
+
+        // Рендеринг сцени
+        if (this.sm.renderer && this.sm.scene && this.sm.camera) {
+            this.sm.renderer.render(this.sm.scene, this.sm.camera);
         }
     }
-}
 
-function updateSimulation(cameraPosition, devices) {
-    const distToBed = cameraPosition.distanceTo(new THREE.Vector3(-4.5, 1.6, -2));
-    if (distToBed < 2.5) {
-        devices.lavaLamp.turnOn();
-    } else {
-        devices.lavaLamp.turnOff();
-    }
-    const distToDesk = cameraPosition.distanceTo(new THREE.Vector3(4, 1.6, -4));
-    if (distToDesk < 2.0) {
-        devices.workstation.activate();
-    } else {
-        devices.workstation.deactivate();
-    }
-    const distToDoor = cameraPosition.distanceTo(new THREE.Vector3(0, 1.6, 5.5));
-    if (distToDoor < 3.0) {
-        devices.smartDoor.open();
-    } else {
-        devices.smartDoor.close();
+    interactWithTarget() {
+        if (this.currentTarget) {
+            const payload = this.currentTarget.toggle();
+            this.dm.updateDevice(this.currentTarget.id, payload);
+        }
     }
 }

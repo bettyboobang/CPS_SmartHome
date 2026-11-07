@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPS Smart Home 3D Simulator</title>
+    <title>Smart Room 3D - Cyber-Physical Simulator</title>
     <link rel="stylesheet" href="css/style.css">
 
-    <!--бібліотеки 3D рендерингу та GUI -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.18"></script>
@@ -14,14 +13,33 @@
 </head>
 <body>
     <div id="instructions">
-        <h1>Система "Розумний будинок"</h1>
-        <p><strong>Клацніть по екрану, щоб розпочати навігацію</strong></p>
-        <p>Керування: <b>WASD / Стрілки</b> — переміщення | <b>Миша</b> — огляд</p>
+        <div class="tecna-badge">ZENITH TECH OS v4.2</div>
+        <h1>Розумна Кімната Текни (Winx Club)</h1>
+        <p><strong>Клацніть по екрану для переходу в кімнату</strong></p>
+        <p>Керування: <b>W, A, S, D / Стрілки</b> — рух | <b>Миша</b> — огляд | <b>ЛКМ / E</b> — дія</p>
+        <div class="hud-scenarios">
+            <span class="scenario-title">Режими CPS:</span>
+            <button class="btn-scen" data-scenario="default">Стандарт</button>
+            <button class="btn-scen" data-scenario="work">Робота</button>
+            <button class="btn-scen" data-scenario="night">Сон</button>
+            <button class="btn-scen" data-scenario="defense">Кібер-Захист</button>
+        </div>
         <p id="backend-status" class="status-disconnected">Сервер: Перевірка підключення...</p>
     </div>
     <div id="crosshair"></div>
 
-    <!--завантаження головного модульного ES6 скрипту -->
+    <div id="interactive-prompt">
+        <span id="prompt-device-name">Пристрій</span>
+        <span id="prompt-action-text">Натисніть [E] або ЛКМ</span>
+    </div>
+    <div id="tecna-hud">
+        <div class="hud-panel">
+            <div class="hud-item"><span class="hud-lbl">СТАТУС:</span> <span id="hud-status" class="hud-val">ONLINE</span></div>
+            <div class="hud-item"><span class="hud-lbl">ТЕМПЕРАТУРА:</span> <span id="hud-temp" class="hud-val">22.0 °C</span></div>
+            <div class="hud-item"><span class="hud-lbl">CPU КІМНАТИ:</span> <span id="hud-cpu" class="hud-val">40%</span></div>
+            <div class="hud-item"><span class="hud-lbl">КІБЕР-ЗАМОК:</span> <span id="hud-door" class="hud-val">OPEN</span></div>
+        </div>
+    </div>
     <script type="module" src="js/main.js"></script>
 </body>
 </html>

@@ -1,97 +1,127 @@
 import { SceneManager } from './SceneManager.js';
-import { FirstPersonController } from './FirstPersonControls.js';
-import { SmartLight, MotionSensor } from './SmartDevice.js';
+import { FirstPersonControls } from './FirstPersonControls.js';
 import { DeviceManager } from './DeviceManager.js';
-import { SimulationEngine } from './SimulationEngine.js';
+import { SmartDevice } from './SmartDevice.js';
 import { UIManager } from './UIManager.js';
+import { SimulationEngine } from './SimulationEngine.js';
 
-class App {//ініціалізує основний додаток, створюючи менеджер сцени, контролер від першої особи, менеджер пристроїв, движок симуляції та менеджер інтерфейсу користувача
-    constructor() {
-        this.sceneManager = new SceneManager();
-        this.fpController = new FirstPersonController(//ініціалізує контролер від першої особи з заданою камерою, елементом DOM та елементом інструкцій
-            this.sceneManager.camera,
-            document.body,
-            document.getElementById('instructions')
-        );
+function startApp() {
+    try {
+        console.log("⚙️ Ініціалізація розумної кімнати Текни...");
 
-        this.deviceManager = new DeviceManager();
-        this.initDevices();
+        // 1. Створення 3D сцени
+        const sceneManager = new SceneManager();
 
-        this.simEngine = new SimulationEngine(this.deviceManager);
-        this.uiManager = new UIManager(this.simEngine, this.deviceManager);
+        // 2. Керування від першої особи
+        const controls = new FirstPersonControls(sceneManager.camera, document.body);
 
-        this.prevTime = performance.now();
-        this.animate = this.animate.bind(this);
-    }
+        // 3. Автовизначення URL бекенду (підтримує і запуск через Node 3001, і Live Server)
+        const API_URL = window.location.port === '3001' ? '/api' : 'http://127.0.0.1:3001/api';
+        const deviceManager = new DeviceManager(API_URL);
 
-    initDevices() {//ініціалізує розумне світло та датчик руху, додаючи їх до сцени та менеджера пристроїв
-        const lampGeo = new THREE.SphereGeometry(0.2, 32, 32);
-        const lampMat = new THREE.MeshBasicMaterial({ color: 0x555555 });
-        const lampMesh = new THREE.Mesh(lampGeo, lampMat);
-        lampMesh.position.set(0, 3.2, 0);
-        this.sceneManager.scene.add(lampMesh);
+        // 4. Реєстрація смарт-пристроїв кімнати Текни
+        // Термінал
+        const terminalGroup = sceneManager.createTerminalGroup();
+        deviceManager.registerDevice(new SmartDevice('mainTerminal', 'Головний термінал Zen-OS', terminalGroup, { state: true }, (st) => {
+            sceneManager.terminalScreens.forEach(s => {
+                if (s.material) s.material.emissiveIntensity = st.state ? 0.6 : 0.05;
+            });
+        }));
 
-        const pointLight = new THREE.PointLight(0xfffaed, 0.1, 15);
-        pointLight.position.set(0, 3.1, 0);
-        pointLight.castShadow = true;
-        this.sceneManager.scene.add(pointLight);
+        // Ліжко з чипом
+        const bedGroup = sceneManager.createBedGroup();
+        deviceManager.registerDevice(new SmartDevice('podBed', 'Біо-Ліжко з чип-ковдрою', bedGroup, { blanketHeating: true }));
 
-        const smartLight = new SmartLight('smart_light_1', 'Головне освітлення', pointLight, lampMesh);
-        this.deviceManager.addDevice(smartLight);
+        // Двері
+        const doorGroup = sceneManager.createDoorGroup();
+        deviceManager.registerDevice(new SmartDevice('cyberDoor', 'Кібер-Замок Дверей', doorGroup, { locked: false, open: true }, (st) => {
+            if (sceneManager.doorLeft && sceneManager.doorRight) {
+                sceneManager.doorLeft.position.x = st.open ? -1.3 : -0.6;
+                sceneManager.doorRight.position.x = st.open ? 1.3 : 0.6;
+            }
+        }));
 
-        const sensorGeo = new THREE.BoxGeometry(0.3, 0.3, 0.1);
-        const sensorMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const sensorMesh = new THREE.Mesh(sensorGeo, sensorMat);
-        sensorMesh.position.set(0, 1.8, -4.9);
-        this.sceneManager.scene.add(sensorMesh);
+        // Лава-лампа
+        const lampGroup = sceneManager.createPlasmaLampGroup();
+        deviceManager.registerDevice(new SmartDevice('plasmaLamp', 'Неонова Лава-лампа', lampGroup, { state: true }, (st) => {
+            if (sceneManager.plasmaBulb && sceneManager.plasmaLight) {
+                sceneManager.plasmaBulb.visible = st.state;
+                sceneManager.plasmaLight.intensity = st.state ? 1.0 : 0.0;
+                if (st.color) sceneManager.plasmaLight.color.set(st.color);
+            }
+        }));
 
-        const motionSensor = new MotionSensor('motion_sensor_1', 'Датчик руху входу', sensorMesh, 3.0);
-        this.deviceManager.addDevice(motionSensor);
-    }
+        // Шафа & Клімат
+        const wardrobeGroup = sceneManager.createWardrobeGroup();
+        deviceManager.registerDevice(new SmartDevice('climateControl', 'Кліматична станція', wardrobeGroup, { state: true }));
 
-    animate() {//основний цикл анімації
-        requestAnimationFrame(this.animate);
-        try {
-            this.tick();
-        } catch (err) {
-            showFatal('Помилка в циклі анімації', err);
+        // Квантовий годинник
+        const clockGroup = sceneManager.createClockGroup();
+        deviceManager.registerDevice(new SmartDevice('deskClock', 'Квантовий Годинник', clockGroup, { state: true }));
+
+        // Загальне світло
+        deviceManager.registerDevice(new SmartDevice('ambientLighting', 'Освітлення кімнати', null, { state: true, brightness: 0.85 }, (st) => {
+            if (sceneManager.ceilingLight) {
+                sceneManager.ceilingLight.intensity = st.state ? st.brightness * 1.3 : 0.2;
+                if (st.color) sceneManager.ceilingLight.color.set(st.color);
+            }
+        }));
+
+        // 5. Інтерфейс
+        const uiManager = new UIManager(deviceManager);
+        deviceManager.onStateSynced = (state) => {
+            uiManager.updateHUD(state);
+        };
+
+        // 6. Рушій симуляції
+        const engine = new SimulationEngine(sceneManager, controls, deviceManager, uiManager);
+
+        // 7. Події взаємодії
+        window.addEventListener('click', () => {
+            if (controls.controls.isLocked) engine.interactWithTarget();
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyE') engine.interactWithTarget();
+        });
+
+        // Блокування миші через екранне меню
+        const instructions = document.getElementById('instructions');
+        instructions.addEventListener('click', () => {
+            controls.controls.lock();
+        });
+        controls.controls.addEventListener('lock', () => {
+            instructions.style.display = 'none';
+        });
+        controls.controls.addEventListener('unlock', () => {
+            instructions.style.display = 'block';
+        });
+
+        window.addEventListener('resize', () => {
+            sceneManager.camera.aspect = window.innerWidth / window.innerHeight;
+            sceneManager.camera.updateProjectionMatrix();
+            sceneManager.renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 8. Синхронізація з CPS сервером
+        async function syncLoop() {
+            const state = await deviceManager.fetchState();
+            uiManager.setServerStatus(Boolean(state));
         }
-    }
+        syncLoop();
+        setInterval(syncLoop, 1500);
 
-    tick() {//один кадр: оновлює контролер, симуляцію, інтерфейс і рендерить сцену
-        const time = performance.now();
-        const deltaTime = (time - this.prevTime) / 1000;
+        // 9. Запуск рендерингу
+        engine.start();
 
-        this.fpController.update(deltaTime);
-
-        const { distance, triggered } = this.simEngine.update(this.sceneManager.camera.position);//оновлює стан движка симуляції на основі позиції камери та отримує відстань до датчика та стан його активації
-        this.uiManager.update(distance, triggered);
-
-        this.sceneManager.render();//рендерить сцену з поточною камерою
-        this.prevTime = time;
-    }
-
-    start() {//запускає основний цикл анімації
-        this.animate();
+    } catch (err) {
+        console.error("❌ Критична помилка ініціалізації:", err);
     }
 }
 
-function showFatal(title, err) {//показує помилку прямо на сторінці, щоб не доводилось відкривати консоль
-    console.error(title, err);
-    let box = document.getElementById('fatal-error');
-    if (!box) {
-        box = document.createElement('pre');
-        box.id = 'fatal-error';
-        box.style.cssText = 'position:fixed;left:10px;bottom:10px;right:10px;max-height:40vh;overflow:auto;z-index:1000;background:#300;color:#fcc;padding:12px;border-radius:8px;font-size:13px;user-select:text;';
-        document.body.appendChild(box);
-    }
-    box.textContent = title + ':\n' + (err && err.stack ? err.stack : err);
-}
-
-window.addEventListener('error', (e) => showFatal('Помилка', e.error || e.message));
-
-if (typeof THREE === 'undefined' || !THREE.PointerLockControls) {
-    showFatal('Не завантажилась бібліотека three.js (або PointerLockControls)', 'Перевірте інтернет/VPN/блокувальник реклами: скрипти беруться з cdnjs.cloudflare.com та cdn.jsdelivr.net');
+// Запуск після завантаження сторінки
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', startApp);
 } else {
-    new App().start();
+    startApp();
 }
