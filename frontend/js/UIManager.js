@@ -11,7 +11,7 @@ export class UIManager {
         if (typeof Stats !== 'undefined') {
             this.stats = new Stats();
             this.stats.showPanel(0);
-            const statsEl = this.stats.dom || this.stats.domElement;//у Stats.js r16 елемент називається domElement, у новіших версіях — dom
+            const statsEl = this.stats.dom || this.stats.domElement;
             if (statsEl) document.body.appendChild(statsEl);
         }
     }
@@ -55,6 +55,23 @@ export class UIManager {
         const statusFolder = this.gui.addFolder('Моніторинг стану');
         statusFolder.add(this.params, 'distanceToSensor').name('Відстань до датчика').listen();
         statusFolder.add(this.params, 'sensorTriggered').name('Датчик активовано').listen();
+    }
+    initGUI(devices) {
+        const gui = new lil.GUI({ title: 'Керування Кімнатою' });
+        gui.add(this, 'autoMode').name('Авто-сценарій CPS');
+        const lampFolder = gui.addFolder('Лава-Лампа');
+        lampFolder.add(devices.lavaLamp, 'isEnabled').name('Увімкнено').listen().onChange(val => {
+            val ? devices.lavaLamp.turnOn() : devices.lavaLamp.turnOff();
+        });
+        lampFolder.addColor(devices.lavaLamp, 'color').name('Колір сяйва').onChange(color => {
+            devices.lavaLamp.setColor(color);
+        });
+        const pcFolder = gui.addFolder('Робоча Станція');
+        pcFolder.add(devices.workstation, 'isEnabled').name('Монітори').listen();
+        const doorFolder = gui.addFolder('Двері Кімнати');
+        doorFolder.add(devices.smartDoor, 'isOpen').name('Відкрито').listen().onChange(val => {
+            val ? devices.smartDoor.open() : devices.smartDoor.close();
+        });
     }
 
     update(distance, triggered) {

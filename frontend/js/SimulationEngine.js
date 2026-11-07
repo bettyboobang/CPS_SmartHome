@@ -56,3 +56,24 @@ export class SimulationEngine {//керує симуляцією розумно�
         }
     }
 }
+
+function updateSimulation(cameraPosition, devices) {
+    const distToBed = cameraPosition.distanceTo(new THREE.Vector3(-4.5, 1.6, -2));
+    if (distToBed < 2.5) {
+        devices.lavaLamp.turnOn();
+    } else {
+        devices.lavaLamp.turnOff();
+    }
+    const distToDesk = cameraPosition.distanceTo(new THREE.Vector3(4, 1.6, -4));
+    if (distToDesk < 2.0) {
+        devices.workstation.activate();
+    } else {
+        devices.workstation.deactivate();
+    }
+    const distToDoor = cameraPosition.distanceTo(new THREE.Vector3(0, 1.6, 5.5));
+    if (distToDoor < 3.0) {
+        devices.smartDoor.open();
+    } else {
+        devices.smartDoor.close();
+    }
+}
